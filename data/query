@@ -1,0 +1,12 @@
+
+
+INSERT INTO public.customer_user (customer_user_id, email, first_name, last_name, password_hash, created_at, updated_at, deleted_at) VALUES (DEFAULT, 'test@gmail.com', 'test', 'name', '1111', DEFAULT, DEFAULT, null);
+INSERT INTO public.customer_user (customer_user_id, email, first_name, last_name, password_hash, created_at, updated_at, deleted_at) VALUES (DEFAULT, 'test2@gmail.com', 'test', 'name', '1111', DEFAULT, DEFAULT, null);
+
+INSERT INTO public.product (product_id, title, subtitle, description, created_at, updated_at, deleted_at) VALUES (DEFAULT, 'product-1', null, null, DEFAULT, DEFAULT, null);
+INSERT INTO public.product (product_id, title, subtitle, description, created_at, updated_at, deleted_at) VALUES (DEFAULT, 'product-2', null, null, DEFAULT, DEFAULT, null);
+
+INSERT INTO public.product_variant (product_variant_id, product_id, title, inventory_quantity, sold_quantity, claim_quantity, product_variant_price, is_default, created_at, updated_at, deleted_at) VALUES (DEFAULT, 1, '아이폰/red', 500, DEFAULT, DEFAULT, 120000, true, DEFAULT, DEFAULT, null);
+INSERT INTO public.product_variant (product_variant_id, product_id, title, inventory_quantity, sold_quantity, claim_quantity, product_variant_price, is_default, created_at, updated_at, deleted_at) VALUES (DEFAULT, 1, '아이폰/black', 500, DEFAULT, DEFAULT, 120000, false, DEFAULT, DEFAULT, null);
+INSERT INTO public.product_variant (product_variant_id, product_id, title, inventory_quantity, sold_quantity, claim_quantity, product_variant_price, is_default, created_at, updated_at, deleted_at) VALUES (DEFAULT, 2, '갤럭시 / blue', 500, DEFAULT, DEFAULT, 60000, true, DEFAULT, DEFAULT, null);
+INSERT INTO public.product_variant (product_variant_id, product_id, title, inventory_quantity, sold_quantity, claim_quantity, product_variant_price, is_default, created_at, updated_at, deleted_at) VALUES (DEFAULT, 2, '갤럭시 / red', 500, DEFAULT, DEFAULT, 60000, false, DEFAULT, DEFAULT, null);

@@ -1,0 +1,13 @@
+{
+  env: 'prod',
+  debug: false,
+  port: 2020,
+
+  db: {
+    database: 'commerce',
+    host: 'localhost',
+    port: 5432,
+    username: 'devuser',
+    password: '123456'
+  }
+}

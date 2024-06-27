@@ -1,0 +1,209 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model customer_user {
+  customer_user_id Int       @id @default(autoincrement()) @db.Integer
+  email            String    @unique
+  first_name       String?   @db.VarChar(255)
+  last_name        String?   @db.VarChar(255)
+  password_hash    String    @db.VarChar(255)
+  created_at       DateTime  @default(now()) @db.Timestamp(3)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  deleted_at       DateTime? @db.Timestamp(3)
+  order            order[]
+
+  @@index([email])
+}
+
+model product {
+  product_id  Int     @id @default(autoincrement()) @db.Integer
+  title       String  @db.VarChar(255) // 상품명
+  subtitle    String? @db.VarChar(255) // 부제목
+  description String? @db.VarChar(512) // 상품 설명
+
+  created_at      DateTime          @default(now()) @db.Timestamp(3)
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamp(3)
+  deleted_at      DateTime?         @db.Timestamp(3)
+  product_variant product_variant[]
+}
+
+model product_variant {
+  product_variant_id    Int         @id @default(autoincrement())
+  product_id            Int         @db.Integer // 상품 ID
+  product               product     @relation(fields: [product_id], references: [product_id])
+  title                 String      @db.VarChar(255) // 제목 예) 'M / Black', 'One Size', 'XL'
+  inventory_quantity    Int         @default(0) @db.Integer // 남은 재고 수량
+  sold_quantity         Int         @default(0) @db.Integer // 팔린 수량
+  claim_quantity        Int         @default(0) @db.Integer // 클레임 수량
+  product_variant_price Decimal     @db.Decimal // 가격
+  is_default            Boolean     @default(false) // 기본 상품 여부
+  created_at            DateTime    @default(now()) @db.Timestamp(3) // 생성일
+  updated_at            DateTime    @default(now()) @updatedAt @db.Timestamp(3) // 수정일
+  deleted_at            DateTime?   @db.Timestamp(3) // 삭제일
+  line_item             line_item[]
+
+  @@index([product_id])
+}
+
+model order {
+  order_id         Int                @id @default(autoincrement()) @db.Integer
+  customer_user_id Int                @db.Integer
+  customer_user    customer_user      @relation(fields: [customer_user_id], references: [customer_user_id])
+  status           OrderStatus        @default(BEFORE_PAYMENT) // 주문 상태
+  payment_status   OrderPaymentStatus @default(NOT_PAID) // 주문 결제 상태
+  canceled_at      DateTime?          @db.Timestamp(3) // 취소일
+  // 주문 금액 관련 컬럼
+  payment_amount   Decimal            @db.Decimal // 결제금액
+  payment_id       Int?               @unique @db.Integer // 결제 정보
+  payment          payment?           @relation(fields: [payment_id], references: [payment_id])
+  created_at       DateTime           @default(now()) @db.Timestamp(3)
+  updated_at       DateTime           @default(now()) @updatedAt @db.Timestamp(3)
+  deleted_at       DateTime?          @db.Timestamp(3)
+  line_item        line_item[]
+  order_claim_item order_claim_item[]
+
+  @@index([customer_user_id])
+  @@index([status])
+}
+
+// 주문 상태 enum
+enum OrderStatus {
+  BEFORE_PAYMENT // 결제전
+  WAITING_FOR_PAYMENT // 결제대기
+  PAYMENT_COMPLETED // 결제완료
+  PREPARING_PRODUCT // 상품준비중
+  PREPARING_FOR_SHIPMENT // 배송준비중
+  SHIPPING // 배송중
+  SHIPPED // 배송완료
+  PURCHASE_CONFIRMED // 구매확정
+
+  CANCEL_REQUEST // 주문 취소 요청
+  CANCELED // 취소됨
+  ARCHIVED // 보관됨
+  REQUIRES_ACTION // 조치 필요
+}
+
+// 주문 결제 상태 enum
+enum OrderPaymentStatus {
+  NOT_PAID // 미결제
+  AWAITING // 대기 중
+  CAPTURED // 결제 완료
+  PARTIALLY_REFUNDED // 부분 환불
+  REFUNDED // 환불됨
+  CANCELED // 취소됨
+  REQUIRES_ACTION // 조치 필요
+}
+
+// 주문 상품 정보
+model line_item {
+  item_id               Int                @id @default(autoincrement())
+  product_variant_id    Int                @db.Integer
+  product_variant       product_variant    @relation(fields: [product_variant_id], references: [product_variant_id])
+  status                itemStatus         @default(DRAFT) // 상태
+  title                 String             @db.VarChar()
+  quantity              Int                @db.Integer // 주문한 수량
+  fulfilled_quantity    Int?               @db.Integer // 배송 완료된 항목의 수량입니다.
+  returned_quantity     Int?               @db.Integer // 반품된 품목의 수량입니다.
+  shipped_quantity      Int?               @db.Integer // 배송된 품목의 수량입니다.
+  // 주문 금액 관련 컬럼
+  original_amount       Decimal?           @db.Decimal() // 정가 (1개)
+  payment_amount        Decimal?           @db.Decimal() // 결제 금액 (1개)
+  order_id              Int                @db.Integer // 주문 아이디
+  order                 order              @relation(fields: [order_id], references: [order_id])
+  purchase_confirmed_at DateTime?          @db.Timestamp(3) // 구매확정 시간
+  created_at            DateTime           @default(now()) @db.Timestamp(3)
+  updated_at            DateTime           @default(now()) @updatedAt @db.Timestamp(3)
+  deleted_at            DateTime?          @db.Timestamp(3)
+  order_claim_item      order_claim_item[]
+
+  @@index([order_id])
+  @@index([product_variant_id])
+}
+
+// 주문 상태 enum
+enum itemStatus {
+  DRAFT // 임시
+  DRAFT_ORDER // 주문 초안
+  ORDER // 주문
+  PREPARING_PRODUCT // 상품준비중
+  PREPARING_FOR_SHIPMENT // 배송준비중
+  SHIPPING // 배송중
+  SHIPPED // 배송완료
+  PURCHASE_CONFIRMED // 구매확정
+
+  ARCHIVED // 보관됨
+  REQUIRES_ACTION // 조치 필요
+}
+
+// 결제 정보
+model payment {
+  payment_id      Int       @id @default(autoincrement())
+  amount          Decimal   @db.Decimal() // 결제 금액
+  current_amount  Decimal   @db.Decimal() // 남은 금액
+  refunded_amount Decimal?  @default(0) @db.Decimal() // 환불된 금액
+  captured_at     DateTime? @db.Timestamp(3) // 결제 완료 시간
+  canceled_at     DateTime? @db.Timestamp(3) // 결제 취소 시간
+
+  created_at DateTime  @default(now()) @db.Timestamp(3)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  deleted_at DateTime? @db.Timestamp(3)
+  order      order?
+}
+
+// 주문 클레임(교환/환불)한 item 정보
+model order_claim_item {
+  order_claim_item_id  Int                 @id @default(autoincrement()) @db.Integer
+  order_id             Int                 @db.Integer
+  order                order               @relation(fields: [order_id], references: [order_id])
+  item_id              Int                 @db.Integer
+  line_item            line_item           @relation(fields: [item_id], references: [item_id])
+  status               ClaimStatus // 주문 클레임 상태
+  type                 ClaimType // 클레임 타입
+  claim_responsibility ClaimResponsibility // 반품비 부담자
+  claim_quantity       Int                 @db.Integer // 클레임 수량
+  note                 String?             @db.VarChar(512) // 반품 사유 상세
+  refund_amount        Decimal?            @db.Decimal // 환불 금액(전체)
+  canceled_at          DateTime?           @db.Timestamp(3) // 사용자가 클레임을 취소한 시간
+  created_at           DateTime            @default(now()) @db.Timestamp(3)
+  updated_at           DateTime            @default(now()) @updatedAt @db.Timestamp(3)
+  deleted_at           DateTime?           @db.Timestamp(3)
+
+  @@index([order_id])
+  @@index([item_id])
+}
+
+enum ClaimResponsibility {
+  CUSTOMER // 구매자 부담
+  STORE // 판매자 부담
+}
+
+enum ClaimPaymentStatusEnum {
+  NA // N/A
+  NOT_REFUNDED // 환불되지 않음
+  REFUNDED // 환불됨
+}
+
+enum ClaimType {
+  RETURN // 반품
+  REPLACE // 교환
+  CANCELED // 취소
+}
+
+enum ClaimStatus {
+  REQUESTED // 요청됨
+  CONFIRMED // 승인됨
+  REJECTED // 거부됨
+  CANCELED // 취소됨
+}
